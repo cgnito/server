@@ -20,7 +20,6 @@ server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 # Allow the OS to reuse this address immediately after the server stops.
 # Without this, restarting quickly raises "Address already in use" because
 # the OS keeps the port reserved for ~60 seconds after a connection closes
-# (TCP TIME_WAIT). This is painful during development.
 server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
 server_socket.bind((HOST, PORT))
@@ -62,4 +61,10 @@ while True:
             body = b"Internal Server Error"
 
         response = build_response(status, body)
-        connection.sendall(response)
+
+        try:
+            connection.sendall(response)
+        except OSError as error:
+            # The client disconnected before we could deliver the response.
+            # Log it and move on — the connection is closed by the `with` block.
+            print(f"  [!] failed to send response: {error}")

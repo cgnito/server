@@ -40,7 +40,7 @@ Status labels: `[ ]` open · `[x]` done · `[-]` deferred · `[~]` in progress
 ---
 
 **A3 — `sendall` not guarded against a broken connection**
-- **Status:** `[ ]`
+- **Status:** `[x]`
 - **Finding:** `connection.sendall(response)` has no error handling.
 - **Evidence:** `server.py:46`
 - **Impact:** If the client disconnects before the response is sent, `BrokenPipeError` propagates unhandled. In a loop (A1) this would kill the server.
