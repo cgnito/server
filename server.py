@@ -1,5 +1,7 @@
 import socket
 
+from http_parser import parse_request_line
+
 server_socket = socket.socket(
     socket.AF_INET,
     socket.SOCK_STREAM
@@ -15,36 +17,53 @@ with connection:
     print(f"Connected by {client_address}")
     data = connection.recv(1024)
 
-    request_text = data.decode("utf-8")
-    request_line = request_text.split("\r\n")[0]
+    request_text = data.decode("iso-8859-1")
+    request_line = request_text.split("\r\n", 1)[0]
 
-    method, path, version = request_line.split(" ")
+    try:
+        request = parse_request_line(request_line)
+    except ValueError:
+        body = b"Bad Request"
 
-    print("Method:", method)
-    print("Path:", path)
-    print("Version:", version)
+        response = (
+            b"HTTP/1.1 400 Bad Request\r\n"
+            b"Content-Type: text/plain\r\n"
+            b"Content-Length: " + str(len(body)).encode("ascii") + b"\r\n"
+            b"Connection: close\r\n"
+            b"\r\n"
+            + body
+        )
 
-    if method == "GET" and path == "/":
-        body = b"Welcome to the home page!"
-
-    elif method == "GET" and path == "/about":
-        body = b"This is the about page."
-
+        connection.sendall(response)
     else:
-        body = b"Not Found"
+        print("Method:", request["method"])
+        print("Target:", request["target"])
+        print("Version:", request["version"])
 
-    print(f"Received: {data!r}")
+        # Continue with normal request handling here.
 
-    response = (
-        b"HTTP/1.1 200 OK\r\n"
-        b"Content-Type: text/plain\r\n"
-        b"Content-Length: " + str(len(body)).encode("ascii") + b"\r\n"
-        b"Connection: close\r\n"
-        b"\r\n"
-        + body
-    )
+        if request["method"] == "GET" and request["target"] == "/":
+            status = b"200 OK"
+            body = b"Welcome to the home page!"
 
-    connection.sendall(response)
+        elif request["method"] == "GET" and request["target"] == "/about":
+            status = b"200 OK"
+            body = b"This is the about page."
+
+        else:
+            status = b"404 Not Found"
+            body = b"Not Found"
+
+        response = (
+            b"HTTP/1.1 " + status + b"\r\n"
+            b"Content-Type: text/plain\r\n"
+            b"Content-Length: " + str(len(body)).encode("ascii") + b"\r\n"
+            b"Connection: close\r\n"
+            b"\r\n"
+            + body
+        )
+
+        connection.sendall(response)
 server_socket.close()
 
 
