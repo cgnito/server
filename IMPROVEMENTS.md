@@ -27,7 +27,7 @@ Status labels: `[ ]` open · `[x]` done · `[-]` deferred · `[~]` in progress
 ---
 
 **A2 — Missing `SO_REUSEADDR`**
-- **Status:** `[ ]`
+- **Status:** `[x]`
 - **Finding:** The server socket is created and bound without setting socket options.
 - **Evidence:** `server.py:7–14`
 - **Impact:** Restarting within ~60 seconds of a crash raises `OSError: Address already in use` due to TCP `TIME_WAIT`.

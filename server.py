@@ -1,3 +1,11 @@
+"""
+HTTP server entry point.
+
+Sets up the TCP socket, binds it to a port, and runs the accept loop.
+Each iteration of the loop handles one complete client connection from
+request to response, then goes back to waiting for the next client.
+"""
+
 import socket
 
 from http_parser import parse_request, read_request_body, receive_headers
@@ -8,8 +16,14 @@ HOST = "127.0.0.1"
 PORT = 8000
 
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server_socket.bind((HOST, PORT))
 
+# Allow the OS to reuse this address immediately after the server stops.
+# Without this, restarting quickly raises "Address already in use" because
+# the OS keeps the port reserved for ~60 seconds after a connection closes
+# (TCP TIME_WAIT). This is painful during development.
+server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
+server_socket.bind((HOST, PORT))
 server_socket.listen()
 
 print(f"Server is listening on {HOST}:{PORT}")
@@ -43,13 +57,9 @@ while True:
             body = b"Incomplete Request"
 
         except Exception as error:
-
             print(f"  [!] unexpected error: {error}")
             status = b"500 Internal Server Error"
             body = b"Internal Server Error"
 
         response = build_response(status, body)
         connection.sendall(response)
-
-    # Execution reaches here after the `with` block closes the connection.
-    # The loop goes back to accept() and waits silently for the next client.
