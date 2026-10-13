@@ -2,8 +2,6 @@ import socket
 
 from http_parser import parse_request, receive_headers, read_request_body
 
-
-
 server_socket = socket.socket(
     socket.AF_INET,
     socket.SOCK_STREAM
@@ -22,6 +20,8 @@ with connection:
     try:
         data = receive_headers(connection)
         request = parse_request(data)
+        request = read_request_body(connection, request)
+
 
         print("Method:", request["method"])
         print("Target:", request["target"])
