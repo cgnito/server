@@ -1,64 +1,55 @@
 import socket
 
-from http_parser import parse_request, receive_headers, read_request_body
-
-server_socket = socket.socket(
-    socket.AF_INET,
-    socket.SOCK_STREAM
-)
+from http_parser import parse_request, read_request_body, receive_headers
+from response import build_response
+from router import route_request
 
 HOST = "127.0.0.1"
 PORT = 8000
+
+server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server_socket.bind((HOST, PORT))
+
 server_socket.listen()
 
-print(f"Server is listening on port {PORT}")
-connection, client_address = server_socket.accept()
+print(f"Server is listening on {HOST}:{PORT}")
 
-with connection:
-    print(f"Connected by {client_address}")
-    try:
-        data = receive_headers(connection)
-        request = parse_request(data)
-        request = read_request_body(connection, request)
+while True:
+    connection, client_address = server_socket.accept()
+    print(f"Connection from {client_address}")
 
+    with connection:
+        try:
+            data = receive_headers(connection)
+            request = parse_request(data)
+            request = read_request_body(connection, request)
 
-        print("Method:", request["method"])
-        print("Target:", request["target"])
-        print("Version:", request["version"])
-        print("Headers:", request["headers"])
-        print("Body:", request["body"])
+            status, body = route_request(request)
 
-    except (ValueError, ConnectionError) as error:
-        print("Request error:", error)
+            print(f"  method:  {request['method']}")
+            print(f"  target:  {request['target']}")
+            print(f"  version: {request['version']}")
+            print(f"  headers: {request['headers']}")
+            print(f"  body:    {request['body']}")
 
-        #fixxxxxxxxxxxxx
-        # Continue with normal request handling here.
+        except ValueError as error:
+            print(f"  [!] request error: {error}")
+            status = b"400 Bad Request"
+            body = b"Bad Request"
 
-    if request["method"] == "GET" and request["target"] == "/":
-        status = b"200 OK"
-        body = b"Welcome to the home page!"
+        except ConnectionError as error:
+            print(f"  [!] connection error: {error}")
+            status = b"400 Bad Request"
+            body = b"Incomplete Request"
 
-    elif request["method"] == "GET" and request["target"] == "/about":
-        status = b"200 OK"
-        body = b"This is the about page."
+        except Exception as error:
 
-    else:
-        status = b"404 Not Found"
-        body = b"Not Found"
+            print(f"  [!] unexpected error: {error}")
+            status = b"500 Internal Server Error"
+            body = b"Internal Server Error"
 
-    response = (
-        b"HTTP/1.1 " + status + b"\r\n"
-        b"Content-Type: text/plain\r\n"
-        b"Content-Length: " + str(len(body)).encode("ascii") + b"\r\n"
-        b"Connection: close\r\n"
-        b"\r\n"
-        + body
-    )
+        response = build_response(status, body)
+        connection.sendall(response)
 
-    connection.sendall(response)
-server_socket.close()
-
-
-
-# to test: python3 -c "import socket; s=socket.create_connection(('127.0.0.1', 8000)); s.sendall(b'Hello server'); print(s.recv(1024)); s.close()"
+    # Execution reaches here after the `with` block closes the connection.
+    # The loop goes back to accept() and waits silently for the next client.
