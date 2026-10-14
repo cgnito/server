@@ -6,6 +6,7 @@ Each iteration of the loop handles one complete client connection from
 request to response, then goes back to waiting for the next client.
 """
 
+import os
 import socket
 
 from http_parser import parse_request, read_request_body, receive_headers
@@ -14,6 +15,11 @@ from router import route_request
 
 HOST = "127.0.0.1"
 PORT = 8000
+
+# How long to wait for a client to finish sending its request.
+# Overridable via environment variable so tests can use a shorter value
+# without touching this file.
+CONNECTION_TIMEOUT = int(os.environ.get("CONNECTION_TIMEOUT", "30"))
 
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
@@ -29,6 +35,7 @@ print(f"Server is listening on {HOST}:{PORT}")
 
 while True:
     connection, client_address = server_socket.accept()
+    connection.settimeout(CONNECTION_TIMEOUT)
     print(f"Connection from {client_address}")
 
     with connection:
@@ -44,6 +51,11 @@ while True:
             print(f"  version: {request['version']}")
             print(f"  headers: {request['headers']}")
             print(f"  body:    {request['body']}")
+
+        except socket.timeout:
+            print(f"  [!] request timed out ({CONNECTION_TIMEOUT}s)")
+            status = b"408 Request Timeout"
+            body = b"Request Timeout"
 
         except ValueError as error:
             print(f"  [!] request error: {error}")

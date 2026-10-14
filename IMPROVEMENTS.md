@@ -53,7 +53,7 @@ Status labels: `[ ]` open · `[x]` done · `[-]` deferred · `[~]` in progress
 ---
 
 **A4 — No timeout on socket reads**
-- **Status:** `[ ]`
+- **Status:** `[x]`
 - **Finding:** `receive_headers` and `read_request_body` can block indefinitely on `recv`.
 - **Evidence:** `http_parser.py:68`, `http_parser.py:89`
 - **Impact:** A client that stalls after connecting holds the server (and eventually all connections) forever.

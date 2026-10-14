@@ -34,10 +34,15 @@ def send_request(raw: bytes, timeout: float = 2.0) -> bytes:
 class TestServerIntegration(unittest.TestCase):
 
     def setUp(self):
-        """Start the server subprocess before each test."""
+        """Start the server subprocess before each test.
+
+        CONNECTION_TIMEOUT is set to 1 second so that timeout-related tests
+        complete quickly. The real default (30 s) is only used in production.
+        """
         self.process = subprocess.Popen(
             ["python3", "server.py"],
             cwd=SERVER_DIR,
+            env={**os.environ, "CONNECTION_TIMEOUT": "1"},
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
         )
@@ -110,6 +115,20 @@ class TestServerIntegration(unittest.TestCase):
         # The server must still be responsive after the broken connection.
         response = send_request(b"GET / HTTP/1.1\r\nHost: localhost\r\n\r\n")
         self.assertIn(b"200 OK", response)
+
+
+    def test_slow_client_receives_408(self):
+        """A client that connects but never sends headers gets 408 Request Timeout."""
+        s = socket.create_connection((HOST, PORT), timeout=2)
+        s.settimeout(5)  # Give recv enough time to get the server's timeout response.
+
+        # Hold the connection open without sending anything.
+        # The server's 1-second timeout (CONNECTION_TIMEOUT env var) will fire first.
+        time.sleep(1.5)
+
+        response = s.recv(4096)
+        s.close()
+        self.assertIn(b"408", response)
 
 
 if __name__ == "__main__":
