@@ -83,6 +83,9 @@ def parse_request(data: bytes) -> dict:
         else:
             headers[name] = value
 
+    if request["version"] == "HTTP/1.1" and "host" not in headers:
+        raise ValueError("HTTP/1.1 requests must include a Host header")
+
     request["headers"] = headers
     request["body"] = body
 

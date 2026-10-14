@@ -109,7 +109,7 @@ Status labels: `[ ]` open · `[x]` done · `[-]` deferred · `[~]` in progress
 ---
 
 **B3 — Missing `Host` header validation for HTTP/1.1**
-- **Status:** `[ ]`
+- **Status:** `[x]`
 - **Finding:** The `Host` header is never checked for presence after parsing.
 - **Evidence:** `http_parser.py:39–55`
 - **Impact:** HTTP/1.1 requires `Host` (RFC 7230 §5.4). Accepting requests without it is technically incorrect.

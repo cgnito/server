@@ -119,6 +119,19 @@ class TestParseRequest(unittest.TestCase):
         with self.assertRaises(ValueError):
             parse_request(raw)
 
+    def test_http11_without_host_raises(self):
+        # RFC 7230 §5.4: HTTP/1.1 clients must send a Host header.
+        raw = b"GET / HTTP/1.1\r\n\r\n"
+        with self.assertRaises(ValueError):
+            parse_request(raw)
+
+    def test_http10_without_host_is_accepted(self):
+        # Host is not required in HTTP/1.0.
+        raw = b"GET / HTTP/1.0\r\n\r\n"
+        result = parse_request(raw)
+        self.assertEqual(result["version"], "HTTP/1.0")
+        self.assertNotIn("host", result["headers"])
+
     def test_duplicate_repeatable_header_is_combined(self):
         # RFC 7230 §3.2.2: repeated values for the same header are combined
         # into a single comma-separated value.
