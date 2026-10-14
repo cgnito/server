@@ -8,6 +8,7 @@ connection-handling behaviour that cannot be tested with unit tests alone
 """
 
 import os
+import signal
 import socket
 import struct
 import subprocess
@@ -49,8 +50,14 @@ class TestServerIntegration(unittest.TestCase):
         self._wait_for_server()
 
     def tearDown(self):
-        """Terminate the server subprocess after each test."""
-        self.process.terminate()
+        """Terminate the server subprocess after each test.
+
+        poll() returns None if the process is still running, or its exit code
+        if it already exited (e.g. the test sent SIGINT). We skip terminate()
+        in the latter case to avoid sending a signal to a dead process.
+        """
+        if self.process.poll() is None:
+            self.process.terminate()
         self.process.wait()
 
     def _wait_for_server(self, attempts: int = 20, delay: float = 0.05):
@@ -116,6 +123,22 @@ class TestServerIntegration(unittest.TestCase):
         response = send_request(b"GET / HTTP/1.1\r\nHost: localhost\r\n\r\n")
         self.assertIn(b"200 OK", response)
 
+
+    # ── Shutdown behaviour ─────────────────────────────────────────────────
+
+    def test_clean_shutdown_on_sigint(self):
+        """Server exits with code 0 when sent SIGINT (the Ctrl-C signal).
+
+        Without a try/finally, KeyboardInterrupt propagates unhandled and
+        Python exits with code 1. With the handler in place the server closes
+        its socket and exits cleanly with code 0.
+        """
+        self.process.send_signal(signal.SIGINT)
+        try:
+            returncode = self.process.wait(timeout=2)
+        except subprocess.TimeoutExpired:
+            self.fail("Server did not shut down within 2 seconds of SIGINT")
+        self.assertEqual(returncode, 0)
 
     def test_slow_client_receives_408(self):
         """A client that connects but never sends headers gets 408 Request Timeout."""

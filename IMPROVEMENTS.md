@@ -66,7 +66,7 @@ Status labels: `[ ]` open · `[x]` done · `[-]` deferred · `[~]` in progress
 ---
 
 **A5 — Server socket not protected in a `try/finally`**
-- **Status:** `[ ]`
+- **Status:** `[x]`
 - **Finding:** `server_socket.close()` is at the end of the file. A `KeyboardInterrupt` or exception during `accept()` skips it.
 - **Evidence:** `server.py:47`
 - **Impact:** File descriptor leak; port may not release cleanly.

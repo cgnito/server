@@ -17,8 +17,6 @@ HOST = "127.0.0.1"
 PORT = 8000
 
 # How long to wait for a client to finish sending its request.
-# Overridable via environment variable so tests can use a shorter value
-# without touching this file.
 CONNECTION_TIMEOUT = int(os.environ.get("CONNECTION_TIMEOUT", "30"))
 
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -33,50 +31,54 @@ server_socket.listen()
 
 print(f"Server is listening on {HOST}:{PORT}")
 
-while True:
-    connection, client_address = server_socket.accept()
-    connection.settimeout(CONNECTION_TIMEOUT)
-    print(f"Connection from {client_address}")
+try:
+    while True:
+        connection, client_address = server_socket.accept()
+        connection.settimeout(CONNECTION_TIMEOUT)
+        print(f"Connection from {client_address}")
 
-    with connection:
-        try:
-            data = receive_headers(connection)
-            request = parse_request(data)
-            request = read_request_body(connection, request)
+        with connection:
+            try:
+                data = receive_headers(connection)
+                request = parse_request(data)
+                request = read_request_body(connection, request)
 
-            status, body = route_request(request)
+                status, body = route_request(request)
 
-            print(f"  method:  {request['method']}")
-            print(f"  target:  {request['target']}")
-            print(f"  version: {request['version']}")
-            print(f"  headers: {request['headers']}")
-            print(f"  body:    {request['body']}")
+                print(f"  method:  {request['method']}")
+                print(f"  target:  {request['target']}")
+                print(f"  version: {request['version']}")
+                print(f"  headers: {request['headers']}")
+                print(f"  body:    {request['body']}")
 
-        except socket.timeout:
-            print(f"  [!] request timed out ({CONNECTION_TIMEOUT}s)")
-            status = b"408 Request Timeout"
-            body = b"Request Timeout"
+            except socket.timeout:
+                print(f"  [!] request timed out ({CONNECTION_TIMEOUT}s)")
+                status = b"408 Request Timeout"
+                body = b"Request Timeout"
 
-        except ValueError as error:
-            print(f"  [!] request error: {error}")
-            status = b"400 Bad Request"
-            body = b"Bad Request"
+            except ValueError as error:
+                print(f"  [!] request error: {error}")
+                status = b"400 Bad Request"
+                body = b"Bad Request"
 
-        except ConnectionError as error:
-            print(f"  [!] connection error: {error}")
-            status = b"400 Bad Request"
-            body = b"Incomplete Request"
+            except ConnectionError as error:
+                print(f"  [!] connection error: {error}")
+                status = b"400 Bad Request"
+                body = b"Incomplete Request"
 
-        except Exception as error:
-            print(f"  [!] unexpected error: {error}")
-            status = b"500 Internal Server Error"
-            body = b"Internal Server Error"
+            except Exception as error:
+                print(f"  [!] unexpected error: {error}")
+                status = b"500 Internal Server Error"
+                body = b"Internal Server Error"
 
-        response = build_response(status, body)
+            response = build_response(status, body)
 
-        try:
-            connection.sendall(response)
-        except OSError as error:
-            # The client disconnected before we could deliver the response.
-            # Log it and move on — the connection is closed by the `with` block.
-            print(f"  [!] failed to send response: {error}")
+            try:
+                connection.sendall(response)
+            except OSError as error:
+                print(f"  [!] failed to send response: {error}")
+
+except KeyboardInterrupt:
+    print("\nServer stopped.")
+finally:
+    server_socket.close()
