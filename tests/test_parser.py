@@ -105,12 +105,32 @@ class TestParseRequest(unittest.TestCase):
         with self.assertRaises(ValueError):
             parse_request(raw)
 
-    def test_duplicate_header_raises(self):
-        # Current behaviour: duplicates are rejected.
-        # This will be relaxed when finding B2 is addressed.
+    def test_duplicate_singular_header_raises(self):
+        # Host is a singular header — it must appear exactly once.
+        # Duplicate Host is still rejected even after B2 is addressed.
         raw = b"GET / HTTP/1.1\r\nHost: a\r\nHost: b\r\n\r\n"
         with self.assertRaises(ValueError):
             parse_request(raw)
+
+    def test_duplicate_content_length_raises(self):
+        # Content-Length must never repeat — duplicate values are a known
+        # HTTP request-smuggling vector.
+        raw = b"POST / HTTP/1.1\r\nHost: localhost\r\nContent-Length: 5\r\nContent-Length: 5\r\n\r\nHello"
+        with self.assertRaises(ValueError):
+            parse_request(raw)
+
+    def test_duplicate_repeatable_header_is_combined(self):
+        # RFC 7230 §3.2.2: repeated values for the same header are combined
+        # into a single comma-separated value.
+        raw = (
+            b"GET / HTTP/1.1\r\n"
+            b"Host: localhost\r\n"
+            b"Accept: text/html\r\n"
+            b"Accept: application/json\r\n"
+            b"\r\n"
+        )
+        result = parse_request(raw)
+        self.assertEqual(result["headers"]["accept"], "text/html, application/json")
 
 
 class TestReadRequestBody(unittest.TestCase):

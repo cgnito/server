@@ -39,6 +39,12 @@ def parse_request_line(request_line: str) -> dict:
     }
 
 
+# Headers that must appear at most once in a request.
+# Content-Length: a duplicate is a known HTTP request-smuggling vector.
+# Host: HTTP/1.1 requires exactly one (RFC 7230 §5.4).
+SINGULAR_HEADERS = frozenset({"content-length", "host"})
+
+
 def parse_request(data: bytes) -> dict:
     """Parse raw header bytes into a request dictionary.
 
@@ -70,9 +76,12 @@ def parse_request(data: bytes) -> dict:
             raise ValueError("Empty HTTP header name")
 
         if name in headers:
-            raise ValueError("Duplicate header not supported yet")
-
-        headers[name] = value
+            if name in SINGULAR_HEADERS:
+                raise ValueError(f"Duplicate {name!r} header is not allowed")
+            # RFC 7230 §3.2.2: combine repeated field values with ", "
+            headers[name] = headers[name] + ", " + value
+        else:
+            headers[name] = value
 
     request["headers"] = headers
     request["body"] = body

@@ -96,7 +96,7 @@ Status labels: `[ ]` open · `[x]` done · `[-]` deferred · `[~]` in progress
 ---
 
 **B2 — Duplicate headers rejected too broadly**
-- **Status:** `[ ]`
+- **Status:** `[x]`
 - **Finding:** Any duplicate header raises `ValueError("Duplicate header not supported yet")`.
 - **Evidence:** `http_parser.py:52–53`
 - **Impact:** Legitimate requests with multiple `Accept`, `Accept-Encoding`, or `Cookie` headers are rejected with 400. Modern browsers and HTTP clients routinely send these.
