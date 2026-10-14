@@ -83,7 +83,7 @@ Status labels: `[ ]` open · `[x]` done · `[-]` deferred · `[~]` in progress
 ---
 
 **B1 — `method.isalpha()` does not enforce uppercase**
-- **Status:** `[ ]`
+- **Status:** `[x]`
 - **Finding:** `method.isalpha()` accepts lowercase and mixed-case methods like `get` or `Get`.
 - **Evidence:** `http_parser.py:9`
 - **Impact:** A lowercase method passes parsing but is silently misrouted to the 404 branch instead of being rejected at the protocol layer.

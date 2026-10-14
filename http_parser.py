@@ -23,7 +23,7 @@ def parse_request_line(request_line: str) -> dict:
 
     method, target, version = parts
 
-    if not method.isascii() or not method.isalpha():
+    if not method.isascii() or not method.isalpha() or not method.isupper():
         raise ValueError("Invalid HTTP method")
 
     if not target:

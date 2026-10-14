@@ -53,6 +53,14 @@ class TestParseRequestLine(unittest.TestCase):
         with self.assertRaises(ValueError):
             parse_request_line("GET  / HTTP/1.1")
 
+    def test_lowercase_method_raises(self):
+        with self.assertRaises(ValueError):
+            parse_request_line("get / HTTP/1.1")
+
+    def test_mixed_case_method_raises(self):
+        with self.assertRaises(ValueError):
+            parse_request_line("Get / HTTP/1.1")
+
 
 class TestParseRequest(unittest.TestCase):
     """Tests for the full request parser (request line + headers + body bytes)."""
