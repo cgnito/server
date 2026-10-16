@@ -139,7 +139,7 @@ Status labels: `[ ]` open · `[x]` done · `[-]` deferred · `[~]` in progress
 ---
 
 **C1 — `Content-Length` value not validated before `int()` conversion**
-- **Status:** `[ ]`
+- **Status:** `[x]`
 - **Finding:** `int(request["headers"].get("content-length", "0"))` has no surrounding validation.
 - **Evidence:** `http_parser.py:84`
 - **Impact:** A non-integer value raises `ValueError` (caught → 400, acceptable). A negative value silently passes and produces a zero-byte body read with no error.
@@ -161,7 +161,7 @@ Status labels: `[ ]` open · `[x]` done · `[-]` deferred · `[~]` in progress
 ---
 
 **C2 — No upper bound on `Content-Length`**
-- **Status:** `[ ]`
+- **Status:** `[x]`
 - **Finding:** `content_length` is used with no ceiling.
 - **Evidence:** `http_parser.py:84–95`
 - **Impact:** A client declaring `Content-Length: 10000000000` causes the server to loop on `recv` attempting to read 10 GB.
@@ -174,7 +174,7 @@ Status labels: `[ ]` open · `[x]` done · `[-]` deferred · `[~]` in progress
 ---
 
 **C3 — `Transfer-Encoding` is silently ignored**
-- **Status:** `[ ]`
+- **Status:** `[x]`
 - **Finding:** No check for a `transfer-encoding` header exists anywhere.
 - **Evidence:** `http_parser.py` — entire file
 - **Impact:** A client sending `Transfer-Encoding: chunked` with no `Content-Length` gets a silently misread (likely empty) body with no error.

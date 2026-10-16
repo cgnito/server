@@ -84,6 +84,16 @@ class TestParseRequest(unittest.TestCase):
         result = parse_request(raw)
         self.assertEqual(result["headers"]["host"], "localhost")
 
+    def test_transfer_encoding_is_not_supported(self):
+        raw = (
+            b"POST / HTTP/1.1\r\n"
+            b"Host: localhost\r\n"
+            b"Transfer-Encoding: chunked\r\n"
+            b"\r\n"
+        )
+        with self.assertRaisesRegex(ValueError, "Transfer-Encoding is not supported"):
+            parse_request(raw)
+
     def test_body_bytes_already_in_buffer_are_preserved(self):
         # Bytes that arrived after \r\n\r\n in the same recv are kept.
         raw = b"POST / HTTP/1.1\r\nHost: localhost\r\n\r\nHello"
@@ -218,6 +228,24 @@ class TestReadRequestBody(unittest.TestCase):
         sock = self._FakeSocket(b"")
         result = read_request_body(sock, request)
         self.assertEqual(result["body"], b"")
+
+    def test_negative_content_length_raises_value_error(self):
+        request = {"headers": {"content-length": "-5"}, "body": b""}
+        sock = self._FakeSocket(b"")
+        with self.assertRaisesRegex(ValueError, "Content-Length must not be negative"):
+            read_request_body(sock, request)
+
+    def test_non_integer_content_length_raises_value_error(self):
+        request = {"headers": {"content-length": "abc"}, "body": b""}
+        sock = self._FakeSocket(b"")
+        with self.assertRaisesRegex(ValueError, "Content-Length is not an integer"):
+            read_request_body(sock, request)
+
+    def test_oversized_content_length_raises_value_error(self):
+        request = {"headers": {"content-length": "1048577"}, "body": b""}
+        sock = self._FakeSocket(b"")
+        with self.assertRaisesRegex(ValueError, "Request body too large"):
+            read_request_body(sock, request)
 
     def test_reads_full_body_from_socket(self):
         request = {"headers": {"content-length": "5"}, "body": b""}

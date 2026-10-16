@@ -89,6 +89,26 @@ class TestServerIntegration(unittest.TestCase):
         response = send_request(b"THIS IS NOT HTTP\r\n\r\n")
         self.assertIn(b"400", response)
 
+    def test_oversized_request_body_returns_413(self):
+        request = (
+            b"POST / HTTP/1.1\r\n"
+            b"Host: localhost\r\n"
+            b"Content-Length: 1048577\r\n"
+            b"\r\n"
+        )
+        response = send_request(request)
+        self.assertIn(b"413", response)
+
+    def test_transfer_encoding_returns_501(self):
+        request = (
+            b"POST / HTTP/1.1\r\n"
+            b"Host: localhost\r\n"
+            b"Transfer-Encoding: chunked\r\n"
+            b"\r\n"
+        )
+        response = send_request(request)
+        self.assertIn(b"501", response)
+
     def test_http11_without_host_returns_400(self):
         # HTTP/1.1 requires a Host header. Missing one must return 400.
         response = send_request(b"GET / HTTP/1.1\r\n\r\n")

@@ -7,7 +7,13 @@ Creates the TCP socket, binds to a port, and runs the accept loop.
 import os
 import socket
 
-from http_parser import parse_request, read_request_body, receive_headers
+from http_parser import (
+    RequestBodyTooLarge,
+    UnsupportedTransferEncoding,
+    parse_request,
+    read_request_body,
+    receive_headers,
+)
 from response import build_response
 from router import route_request
 
@@ -51,6 +57,16 @@ try:
                 print(f"  [!] request timed out ({CONNECTION_TIMEOUT}s)")
                 status = b"408 Request Timeout"
                 body = b"Request Timeout"
+
+            except RequestBodyTooLarge as error:
+                print(f"  [!] request body error: {error}")
+                status = b"413 Content Too Large"
+                body = b"Request body too large"
+
+            except UnsupportedTransferEncoding as error:
+                print(f"  [!] request framing error: {error}")
+                status = b"501 Not Implemented"
+                body = b"Transfer-Encoding not supported"
 
             except ValueError as error:
                 print(f"  [!] request error: {error}")

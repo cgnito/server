@@ -37,6 +37,15 @@ def parse_request_line(request_line: str) -> dict:
 # Duplicate Content-Length is a known request-smuggling vector;
 # Host must appear exactly once in HTTP/1.1 (RFC 7230 §5.4).
 SINGULAR_HEADERS = frozenset({"content-length", "host"})
+MAX_BODY_SIZE = 1024 * 1024
+
+
+class RequestBodyTooLarge(ValueError):
+    """Raised when Content-Length exceeds the maximum request body size."""
+
+
+class UnsupportedTransferEncoding(ValueError):
+    """Raised when a request uses unsupported transfer encoding."""
 
 
 def parse_request(data: bytes) -> dict:
@@ -72,6 +81,9 @@ def parse_request(data: bytes) -> dict:
             headers[name] = headers[name] + ", " + value
         else:
             headers[name] = value
+
+    if "transfer-encoding" in headers:
+        raise UnsupportedTransferEncoding("Transfer-Encoding is not supported")
 
     if request["version"] == "HTTP/1.1" and "host" not in headers:
         raise ValueError("HTTP/1.1 requests must include a Host header")
@@ -113,7 +125,19 @@ def read_request_body(connection, request: dict) -> dict:
 
     Raises ConnectionError if the connection closes before the body is complete.
     """
-    content_length = int(request["headers"].get("content-length", "0"))
+    raw_content_length = request["headers"].get("content-length", "0")
+
+    try:
+        content_length = int(raw_content_length)
+    except ValueError:
+        raise ValueError("Content-Length is not an integer")
+
+    if content_length < 0:
+        raise ValueError("Content-Length must not be negative")
+
+    if content_length > MAX_BODY_SIZE:
+        raise RequestBodyTooLarge("Request body too large")
+
     body = request["body"]
 
     while len(body) < content_length:
