@@ -187,7 +187,7 @@ Status labels: `[ ]` open · `[x]` done · `[-]` deferred · `[~]` in progress
 ---
 
 **C4 — Body bytes without a `Content-Length` header are silently kept**
-- **Status:** `[ ]`
+- **Status:** `[x]`
 - **Finding:** `body = request["body"]` initialises from bytes received past `\r\n\r\n`. With no `Content-Length`, the loop skips, but those bytes stay in `request["body"]`.
 - **Evidence:** `http_parser.py:85`
 - **Impact:** Harmless for typical GET requests, but semantically wrong. A body exists only when framing metadata declares it.

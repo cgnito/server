@@ -125,6 +125,10 @@ def read_request_body(connection, request: dict) -> dict:
 
     Raises ConnectionError if the connection closes before the body is complete.
     """
+    if "content-length" not in request["headers"]:
+        request["body"] = b""
+        return request
+
     raw_content_length = request["headers"].get("content-length", "0")
 
     try:

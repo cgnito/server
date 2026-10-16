@@ -229,6 +229,12 @@ class TestReadRequestBody(unittest.TestCase):
         result = read_request_body(sock, request)
         self.assertEqual(result["body"], b"")
 
+    def test_body_without_content_length_is_discarded(self):
+        request = {"headers": {}, "body": b"unexpected body bytes"}
+        sock = self._FakeSocket(b"")
+        result = read_request_body(sock, request)
+        self.assertEqual(result["body"], b"")
+
     def test_negative_content_length_raises_value_error(self):
         request = {"headers": {"content-length": "-5"}, "body": b""}
         sock = self._FakeSocket(b"")
