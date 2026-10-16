@@ -122,7 +122,7 @@ Status labels: `[ ]` open · `[x]` done · `[-]` deferred · `[~]` in progress
 ---
 
 **B4 — Header size check can fire after the header terminator has already arrived**
-- **Status:** `[ ]`
+- **Status:** `[x]`
 - **Finding:** The size check `if len(data) > max_header_size` runs after `data.extend(chunk)` inside the loop. If the final chunk both introduces `\r\n\r\n` and pushes `len(data)` past 65536, a valid request is rejected.
 - **Evidence:** `http_parser.py:72–78`
 - **Impact:** Edge-case false 400 for requests with headers ending near the 64 KB limit.

@@ -1,13 +1,8 @@
 """
 HTTP request parser.
 
-Responsible for reading raw bytes off a socket and turning them into a
-structured request dictionary that the rest of the server can work with.
-
-The three public functions map to three distinct phases:
-  1. receive_headers  — read bytes until the header/body boundary arrives.
-  2. parse_request    — decode and validate the request line and headers.
-  3. read_request_body — read the body according to Content-Length.
+Converts raw bytes into a structured request dict through three steps:
+receive_headers, parse_request, then read_request_body.
 """
 
 
@@ -39,20 +34,15 @@ def parse_request_line(request_line: str) -> dict:
     }
 
 
-# Headers that must appear at most once in a request.
-# Content-Length: a duplicate is a known HTTP request-smuggling vector.
-# Host: HTTP/1.1 requires exactly one (RFC 7230 §5.4).
+# Duplicate Content-Length is a known request-smuggling vector;
+# Host must appear exactly once in HTTP/1.1 (RFC 7230 §5.4).
 SINGULAR_HEADERS = frozenset({"content-length", "host"})
 
 
 def parse_request(data: bytes) -> dict:
-    """Parse raw header bytes into a request dictionary.
+    """Parse raw bytes (headers + initial body chunk) into a request dictionary.
 
-    Expects everything up to and including the blank line (CRLFCRLF).
-    Any bytes after the blank line are stored in request["body"] as a
-    starting buffer for read_request_body.
-
-    Raises ValueError on any structural problem with the request line or headers.
+    Raises ValueError on any structural problem with the request or headers.
     """
     head, separator, body = data.partition(b"\r\n\r\n")
 
@@ -93,15 +83,10 @@ def parse_request(data: bytes) -> dict:
 
 
 def receive_headers(connection) -> bytes:
-    """Read from the socket until the full HTTP header section has arrived.
+    """Read from the socket until \\r\\n\\r\\n arrives, then return all bytes received.
 
-    Accumulates chunks in a buffer and stops as soon as the blank line
-    (CRLFCRLF) that separates headers from body is found. Any bytes that
-    arrived after the blank line are included in the return value and will
-    be handled by read_request_body.
-
-    Raises ConnectionError if the client disconnects before headers are complete.
-    Raises ValueError if the accumulated data exceeds the size limit.
+    Raises ConnectionError if the client disconnects early.
+    Raises ValueError if headers exceed the size limit.
     """
     data = bytearray()
     header_end = b"\r\n\r\n"
@@ -113,20 +98,18 @@ def receive_headers(connection) -> bytes:
         if not chunk:
             raise ConnectionError("Client disconnected before headers were complete")
 
-        if len(data) + len(chunk) > max_header_size:
-            raise ValueError("HTTP headers too large")
-
         data.extend(chunk)
+
+        # Only raise if the terminator still hasn't arrived — a valid request
+        # whose final chunk pushes past the limit must not be rejected.
+        if header_end not in data and len(data) > max_header_size:
+            raise ValueError("HTTP headers too large")
 
     return bytes(data)
 
 
 def read_request_body(connection, request: dict) -> dict:
-    """Read the request body according to the Content-Length header.
-
-    Starts from any body bytes already in request["body"] (which may have
-    arrived in the same recv as the headers), then reads more from the
-    socket until Content-Length bytes have been accumulated.
+    """Read exactly Content-Length bytes for the request body.
 
     Raises ConnectionError if the connection closes before the body is complete.
     """

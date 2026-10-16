@@ -7,7 +7,7 @@ static bytes — no live socket required.
 
 import unittest
 
-from http_parser import parse_request, parse_request_line, read_request_body
+from http_parser import parse_request, parse_request_line, read_request_body, receive_headers
 
 
 class TestParseRequestLine(unittest.TestCase):
@@ -144,6 +144,58 @@ class TestParseRequest(unittest.TestCase):
         )
         result = parse_request(raw)
         self.assertEqual(result["headers"]["accept"], "text/html, application/json")
+
+
+class TestReceiveHeaders(unittest.TestCase):
+    """Tests for receive_headers, using a minimal socket stand-in."""
+
+    class _FakeSocket:
+        """A fake socket that serves bytes from a fixed payload via recv()."""
+
+        def __init__(self, payload: bytes):
+            self._payload = payload
+            self._pos = 0
+
+        def recv(self, n: int) -> bytes:
+            chunk = self._payload[self._pos : self._pos + n]
+            self._pos += n
+            return chunk
+
+    def test_normal_headers_are_returned(self):
+        raw = b"GET / HTTP/1.1\r\nHost: localhost\r\n\r\n"
+        sock = self._FakeSocket(raw)
+        result = receive_headers(sock)
+        self.assertIn(b"\r\n\r\n", result)
+
+    def test_client_disconnect_raises_connection_error(self):
+        # Socket closes immediately without sending anything.
+        sock = self._FakeSocket(b"")
+        with self.assertRaises(ConnectionError):
+            receive_headers(sock)
+
+    def test_oversized_headers_with_no_terminator_raise(self):
+        # 70 000 bytes of data, no \r\n\r\n anywhere — must be rejected.
+        sock = self._FakeSocket(b"a" * 70000)
+        with self.assertRaises(ValueError):
+            receive_headers(sock)
+
+    def test_terminator_in_chunk_that_exceeds_limit_is_accepted(self):
+        """A valid request must not be rejected just because the chunk
+        containing the terminator happens to push total bytes past the limit.
+
+        Payload layout:
+          - 65 536 bytes of 'a' (no terminator, fills exactly to max_header_size)
+          - 7 bytes that contain the terminator at the end
+
+        When the 17th recv() call returns those 7 bytes, the total grows to
+        65 543 — past the 65 536 limit.  Because the terminator is now in the
+        buffer the request is valid and must be accepted.
+        """
+        filler = b"a" * 65536          # Exactly at the limit, no terminator.
+        final_chunk = b"abc\r\n\r\n"  # 7 bytes; terminator at the end.
+        sock = self._FakeSocket(filler + final_chunk)
+        result = receive_headers(sock)
+        self.assertIn(b"\r\n\r\n", result)
 
 
 class TestReadRequestBody(unittest.TestCase):

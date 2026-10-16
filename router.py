@@ -2,20 +2,13 @@
 Request router.
 
 Maps incoming requests to the appropriate status code and response body.
-Unknown paths return 404. Method mismatches also return 404 for now —
-this will be corrected to 405 when finding E1 is addressed.
+Unknown paths and unsupported methods return 404 for now — this will be
+corrected to 405 when finding E1 is addressed.
 """
 
 
 def route_request(request: dict) -> tuple[bytes, bytes]:
-    """Return a (status, body) tuple for the given request.
-
-    Args:
-        request: A parsed request dictionary with at least "method" and "target".
-
-    Returns:
-        A tuple of (status_bytes, body_bytes).
-    """
+    """Return (status, body) for the given request dict."""
     method = request["method"]
     target = request["target"]
 

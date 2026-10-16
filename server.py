@@ -1,9 +1,7 @@
 """
 HTTP server entry point.
 
-Sets up the TCP socket, binds it to a port, and runs the accept loop.
-Each iteration of the loop handles one complete client connection from
-request to response, then goes back to waiting for the next client.
+Creates the TCP socket, binds to a port, and runs the accept loop.
 """
 
 import os
@@ -21,9 +19,7 @@ CONNECTION_TIMEOUT = int(os.environ.get("CONNECTION_TIMEOUT", "30"))
 
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-# Allow the OS to reuse this address immediately after the server stops.
-# Without this, restarting quickly raises "Address already in use" because
-# the OS keeps the port reserved for ~60 seconds after a connection closes
+# Prevents "Address already in use" on quick restart (TCP TIME_WAIT).
 server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
 server_socket.bind((HOST, PORT))
