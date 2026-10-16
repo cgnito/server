@@ -43,6 +43,14 @@ class TestBuildResponse(unittest.TestCase):
         self.assertIn(b"Content-Type: application/json\r\n", response)
         self.assertNotIn(b"Content-Type: text/plain\r\n", response)
 
+    def test_custom_headers_are_used(self):
+        response = build_response(
+            b"405 Method Not Allowed",
+            b"Method Not Allowed",
+            headers={b"Allow": b"GET"},
+        )
+        self.assertIn(b"Allow: GET\r\n", response)
+
     def test_404_response(self):
         response = build_response(b"404 Not Found", b"Not Found")
         self.assertIn(b"HTTP/1.1 404 Not Found", response)

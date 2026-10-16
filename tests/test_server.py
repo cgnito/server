@@ -95,6 +95,11 @@ class TestServerIntegration(unittest.TestCase):
         response = send_request(b"GET /nope HTTP/1.1\r\nHost: localhost\r\n\r\n")
         self.assertIn(b"404", response)
 
+    def test_wrong_method_on_known_path_returns_405_with_allow_header(self):
+        response = send_request(b"POST / HTTP/1.1\r\nHost: localhost\r\n\r\n")
+        self.assertIn(b"405 Method Not Allowed", response)
+        self.assertIn(b"Allow: GET\r\n", response)
+
     def test_malformed_request_returns_400(self):
         response = send_request(b"THIS IS NOT HTTP\r\n\r\n")
         self.assertIn(b"400", response)

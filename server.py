@@ -46,7 +46,7 @@ try:
                 request = parse_request(data)
                 request = read_request_body(connection, request)
 
-                status, body, content_type = route_request(request)
+                status, body, content_type, response_headers = route_request(request)
 
                 print(f"  method:  {request['method']}")
                 print(f"  target:  {request['target']}")
@@ -59,38 +59,44 @@ try:
                 status = b"408 Request Timeout"
                 body = b"Request Timeout"
                 content_type = DEFAULT_CONTENT_TYPE
+                response_headers = {}
 
             except RequestBodyTooLarge as error:
                 print(f"  [!] request body error: {error}")
                 status = b"413 Content Too Large"
                 body = b"Request body too large"
                 content_type = DEFAULT_CONTENT_TYPE
+                response_headers = {}
 
             except UnsupportedTransferEncoding as error:
                 print(f"  [!] request framing error: {error}")
                 status = b"501 Not Implemented"
                 body = b"Transfer-Encoding not supported"
                 content_type = DEFAULT_CONTENT_TYPE
+                response_headers = {}
 
             except ValueError as error:
                 print(f"  [!] request error: {error}")
                 status = b"400 Bad Request"
                 body = b"Bad Request"
                 content_type = DEFAULT_CONTENT_TYPE
+                response_headers = {}
 
             except ConnectionError as error:
                 print(f"  [!] connection error: {error}")
                 status = b"400 Bad Request"
                 body = b"Incomplete Request"
                 content_type = DEFAULT_CONTENT_TYPE
+                response_headers = {}
 
             except Exception as error:
                 print(f"  [!] unexpected error: {error}")
                 status = b"500 Internal Server Error"
                 body = b"Internal Server Error"
                 content_type = DEFAULT_CONTENT_TYPE
+                response_headers = {}
 
-            response = build_response(status, body, content_type)
+            response = build_response(status, body, content_type, response_headers)
 
             try:
                 connection.sendall(response)

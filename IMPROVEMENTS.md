@@ -234,7 +234,7 @@ Status labels: `[ ]` open · `[x]` done · `[-]` deferred · `[~]` in progress
 ---
 
 **E1 — `404 Not Found` returned for known paths with an unsupported method**
-- **Status:** `[ ]`
+- **Status:** `[x]`
 - **Finding:** The `else` branch in the router catches both unrecognised paths and wrong methods on recognised paths. `POST /` returns 404 instead of 405.
 - **Evidence:** `router.py:13–15`
 - **Impact:** Incorrect status code. RFC 7231 §6.5.5 requires 405 when the method is not allowed, and the response must include an `Allow` header.
