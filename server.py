@@ -7,6 +7,7 @@ Creates the TCP socket, binds to a port, and runs the accept loop.
 import os
 import socket
 
+from access_log import format_access_log
 from http_parser import (
     RequestBodyTooLarge,
     UnsupportedTransferEncoding,
@@ -41,18 +42,13 @@ try:
         print(f"Connection from {client_address}")
 
         with connection:
+            request = None
             try:
                 data = receive_headers(connection)
                 request = parse_request(data)
                 request = read_request_body(connection, request)
 
                 status, body, content_type, response_headers = route_request(request)
-
-                print(f"  method:  {request['method']}")
-                print(f"  target:  {request['target']}")
-                print(f"  version: {request['version']}")
-                print(f"  headers: {request['headers']}")
-                print(f"  body:    {request['body']}")
 
             except socket.timeout:
                 print(f"  [!] request timed out ({CONNECTION_TIMEOUT}s)")
@@ -97,6 +93,7 @@ try:
                 response_headers = {}
 
             response = build_response(status, body, content_type, response_headers)
+            print(format_access_log(request, status, body), flush=True)
 
             try:
                 connection.sendall(response)

@@ -264,7 +264,7 @@ Status labels: `[ ]` open · `[x]` done · `[-]` deferred · `[~]` in progress
 ---
 
 **F1 — No automated tests**
-- **Status:** `[ ]`
+- **Status:** `[x]`
 - **Finding:** No test files exist. The only documented testing method is a manual raw socket one-liner in a comment.
 - **Evidence:** No `tests/` directory; `server.py:51` comment
 - **Impact:** Changes cannot be safely verified without running the server manually.
@@ -277,7 +277,7 @@ Status labels: `[ ]` open · `[x]` done · `[-]` deferred · `[~]` in progress
 ---
 
 **F2 — No raw-socket test harness**
-- **Status:** `[ ]`
+- **Status:** `[x]`
 - **Finding:** No test client exists for sending malformed or fragmented requests.
 - **Evidence:** No `test_client.py` or equivalent
 - **Impact:** Protocol-level edge cases (partial reads, truncated headers, invalid framing) cannot be tested with `curl`.
@@ -290,7 +290,7 @@ Status labels: `[ ]` open · `[x]` done · `[-]` deferred · `[~]` in progress
 ---
 
 **F3 — No structured request logging**
-- **Status:** `[ ]`
+- **Status:** `[x]`
 - **Finding:** Five separate `print` statements emit request fields with no timestamp or connection context.
 - **Evidence:** `server.py:29–33`
 - **Impact:** Hard to follow once a connection loop is added (A1). No record of what status was sent.
