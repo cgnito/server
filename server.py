@@ -22,6 +22,7 @@ PORT = 8000
 
 # How long to wait for a client to finish sending its request.
 CONNECTION_TIMEOUT = int(os.environ.get("CONNECTION_TIMEOUT", "30"))
+DEFAULT_CONTENT_TYPE = b"text/plain"
 
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
@@ -45,7 +46,7 @@ try:
                 request = parse_request(data)
                 request = read_request_body(connection, request)
 
-                status, body = route_request(request)
+                status, body, content_type = route_request(request)
 
                 print(f"  method:  {request['method']}")
                 print(f"  target:  {request['target']}")
@@ -57,33 +58,39 @@ try:
                 print(f"  [!] request timed out ({CONNECTION_TIMEOUT}s)")
                 status = b"408 Request Timeout"
                 body = b"Request Timeout"
+                content_type = DEFAULT_CONTENT_TYPE
 
             except RequestBodyTooLarge as error:
                 print(f"  [!] request body error: {error}")
                 status = b"413 Content Too Large"
                 body = b"Request body too large"
+                content_type = DEFAULT_CONTENT_TYPE
 
             except UnsupportedTransferEncoding as error:
                 print(f"  [!] request framing error: {error}")
                 status = b"501 Not Implemented"
                 body = b"Transfer-Encoding not supported"
+                content_type = DEFAULT_CONTENT_TYPE
 
             except ValueError as error:
                 print(f"  [!] request error: {error}")
                 status = b"400 Bad Request"
                 body = b"Bad Request"
+                content_type = DEFAULT_CONTENT_TYPE
 
             except ConnectionError as error:
                 print(f"  [!] connection error: {error}")
                 status = b"400 Bad Request"
                 body = b"Incomplete Request"
+                content_type = DEFAULT_CONTENT_TYPE
 
             except Exception as error:
                 print(f"  [!] unexpected error: {error}")
                 status = b"500 Internal Server Error"
                 body = b"Internal Server Error"
+                content_type = DEFAULT_CONTENT_TYPE
 
-            response = build_response(status, body)
+            response = build_response(status, body, content_type)
 
             try:
                 connection.sendall(response)

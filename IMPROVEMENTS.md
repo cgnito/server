@@ -217,7 +217,7 @@ Status labels: `[ ]` open · `[x]` done · `[-]` deferred · `[~]` in progress
 ---
 
 **D2 — `Content-Type` is hardcoded as `text/plain`**
-- **Status:** `[ ]`
+- **Status:** `[x]`
 - **Finding:** `b"Content-Type: text/plain\r\n"` is unconditional in `build_response`.
 - **Evidence:** `response.py:4`
 - **Impact:** No way to serve JSON, HTML, or binary content without modifying the function.

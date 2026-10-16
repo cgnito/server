@@ -38,6 +38,11 @@ class TestBuildResponse(unittest.TestCase):
         response = build_response(b"200 OK", b"")
         self.assertIn(b"Connection: close\r\n", response)
 
+    def test_custom_content_type_is_used(self):
+        response = build_response(b"200 OK", b"{}", content_type=b"application/json")
+        self.assertIn(b"Content-Type: application/json\r\n", response)
+        self.assertNotIn(b"Content-Type: text/plain\r\n", response)
+
     def test_404_response(self):
         response = build_response(b"404 Not Found", b"Not Found")
         self.assertIn(b"HTTP/1.1 404 Not Found", response)

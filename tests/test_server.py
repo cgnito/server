@@ -81,6 +81,16 @@ class TestServerIntegration(unittest.TestCase):
         response = send_request(b"GET /about HTTP/1.1\r\nHost: localhost\r\n\r\n")
         self.assertIn(b"200 OK", response)
 
+    def test_get_json_returns_json_content_type(self):
+        response = send_request(b"GET /json HTTP/1.1\r\nHost: localhost\r\n\r\n")
+        self.assertIn(b"200 OK", response)
+        self.assertIn(b"Content-Type: application/json\r\n", response)
+
+    def test_get_html_returns_html_content_type(self):
+        response = send_request(b"GET /html HTTP/1.1\r\nHost: localhost\r\n\r\n")
+        self.assertIn(b"200 OK", response)
+        self.assertIn(b"Content-Type: text/html\r\n", response)
+
     def test_unknown_path_returns_404(self):
         response = send_request(b"GET /nope HTTP/1.1\r\nHost: localhost\r\n\r\n")
         self.assertIn(b"404", response)
