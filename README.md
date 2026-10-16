@@ -27,12 +27,18 @@ response.py      # Assembles HTTP response bytes
 ## Running the Server
 
 ```bash
-python server.py
+./scripts/start.sh
 ```
 
 The server listens on `127.0.0.1:8000`.
 
 ## Testing
+
+Run the full test suite from any working directory:
+
+```bash
+./scripts/test.sh
+```
 
 Send a request with curl:
 
