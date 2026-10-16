@@ -1,51 +1,56 @@
 """
 Request router.
 
-Maps incoming requests to the appropriate status code and response body.
-Unknown paths and unsupported methods return 404 for now — this will be
-corrected to 405 when finding E1 is addressed.
+Maps request paths and methods to response handlers.
 """
 
 
+def home_page(request: dict) -> tuple[bytes, bytes, bytes, dict[bytes, bytes]]:
+    """Return the home page response."""
+    return b"200 OK", b"Welcome to the home page!", b"text/plain", {}
+
+
+def about_page(request: dict) -> tuple[bytes, bytes, bytes, dict[bytes, bytes]]:
+    """Return the about page response."""
+    return b"200 OK", b"This is the about page.", b"text/plain", {}
+
+
+def json_page(request: dict) -> tuple[bytes, bytes, bytes, dict[bytes, bytes]]:
+    """Return a JSON response."""
+    return b"200 OK", b'{"message": "Hello from JSON"}', b"application/json", {}
+
+
+def html_page(request: dict) -> tuple[bytes, bytes, bytes, dict[bytes, bytes]]:
+    """Return an HTML response."""
+    return b"200 OK", b"<h1>Hello from HTML</h1>", b"text/html", {}
+
+
+ROUTES = {
+    "/": {"GET": home_page},
+    "/about": {"GET": about_page},
+    "/json": {"GET": json_page},
+    "/html": {"GET": html_page},
+}
+
+
 def route_request(request: dict) -> tuple[bytes, bytes, bytes, dict[bytes, bytes]]:
-    """Return (status, body, content_type, headers) for a request."""
+    """Look up a path and method, then return its response details."""
     method = request["method"]
     target = request["target"]
+    path_routes = ROUTES.get(target)
 
-    if method == "GET" and target == "/":
-        status = b"200 OK"
-        body = b"Welcome to the home page!"
-        content_type = b"text/plain"
-        headers = {}
+    if path_routes is None:
+        return b"404 Not Found", b"Not Found", b"text/plain", {}
 
-    elif method == "GET" and target == "/about":
-        status = b"200 OK"
-        body = b"This is the about page."
-        content_type = b"text/plain"
-        headers = {}
+    handler = path_routes.get(method)
 
-    elif method == "GET" and target == "/json":
-        status = b"200 OK"
-        body = b'{"message": "Hello from JSON"}'
-        content_type = b"application/json"
-        headers = {}
+    if handler is None:
+        allowed_methods = ", ".join(path_routes).encode("ascii")
+        return (
+            b"405 Method Not Allowed",
+            b"Method Not Allowed",
+            b"text/plain",
+            {b"Allow": allowed_methods},
+        )
 
-    elif method == "GET" and target == "/html":
-        status = b"200 OK"
-        body = b"<h1>Hello from HTML</h1>"
-        content_type = b"text/html"
-        headers = {}
-
-    elif target in ("/", "/about", "/json", "/html"):
-        status = b"405 Method Not Allowed"
-        body = b"Method Not Allowed"
-        content_type = b"text/plain"
-        headers = {b"Allow": b"GET"}
-
-    else:
-        status = b"404 Not Found"
-        body = b"Not Found"
-        content_type = b"text/plain"
-        headers = {}
-
-    return status, body, content_type, headers
+    return handler(request)

@@ -7,7 +7,7 @@ No socket or server process is needed.
 
 import unittest
 
-from router import route_request
+from router import ROUTES, route_request
 
 
 def make_request(method: str, target: str) -> dict:
@@ -22,6 +22,11 @@ def make_request(method: str, target: str) -> dict:
 
 
 class TestRouteRequest(unittest.TestCase):
+
+    def test_routes_are_registered_by_path_and_method(self):
+        self.assertIn("/", ROUTES)
+        self.assertIn("GET", ROUTES["/"])
+        self.assertNotIn("POST", ROUTES["/"])
 
     def test_get_root_returns_200(self):
         status, _, content_type, headers = route_request(make_request("GET", "/"))

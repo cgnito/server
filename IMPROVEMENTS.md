@@ -247,7 +247,7 @@ Status labels: `[ ]` open · `[x]` done · `[-]` deferred · `[~]` in progress
 ---
 
 **E2 — Router couples method and path into a single conditional chain**
-- **Status:** `[ ]`
+- **Status:** `[x]`
 - **Finding:** Each route is a single `if method == "..." and target == "..."` branch.
 - **Evidence:** `router.py:5–15`
 - **Impact:** Adding routes or distinguishing 404 from 405 requires restructuring the entire chain.
